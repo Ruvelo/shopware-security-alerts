@@ -272,7 +272,7 @@ jobs:
       - name: The administration API route answers 200 with a token
         working-directory: shop
         run: |
-          PHP_CLI_SERVER_WORKERS=4 php -S 127.0.0.1:8000 -t public > "$RUNNER_TEMP/server.log" 2>&1 &
+          PHP_CLI_SERVER_WORKERS=4 php -S 127.0.0.1:8000 -t public ../plugin/.github/ci/router.php > "$RUNNER_TEMP/server.log" 2>&1 &
           for i in $(seq 1 30); do curl -s -o /dev/null "$APP_URL/api/_info/version" && break; sleep 1; done
           token=$(curl -s -X POST "$APP_URL/api/oauth/token" -H 'Content-Type: application/json' \
             -d "{\"grant_type\":\"password\",\"client_id\":\"administration\",\"scopes\":\"write\",\"username\":\"$ADMIN_USER\",\"password\":\"$ADMIN_PASSWORD\"}" \
