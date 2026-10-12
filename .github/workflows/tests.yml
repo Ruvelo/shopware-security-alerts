@@ -24,7 +24,8 @@ jobs:
           coverage: none
 
       - name: The published composer.json carries no repositories
-        run: php -r '$c = json_decode(file_get_contents("composer.json"), true); exit(isset($c["repositories"]) ? 1 : 0);'
+        run: |
+          if grep -q '"repositories"' composer.json; then echo "::error::composer.json must not carry repositories"; exit 1; fi
 
       - name: Install dependencies
         run: |
