@@ -157,6 +157,7 @@ jobs:
           cat > custom/plugins/AcmeZipDemo/composer.json <<'JSON'
           {
             "name": "acme/zip-demo",
+            "description": "A plugin unpacked from a zip, for the test",
             "type": "shopware-platform-plugin",
             "version": "1.4.2",
             "autoload": { "psr-4": { "Acme\\ZipDemo\\": "src/" } },
