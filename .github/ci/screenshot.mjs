@@ -7,6 +7,8 @@ const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
 page.on('pageerror', (e) => console.log('PAGE ERROR:', e.message));
 page.on('console', (m) => ['error', 'warning'].includes(m.type()) && console.log('CONSOLE', m.type(), m.text().slice(0, 300)));
+page.on('response', (r) => r.status() >= 400 && console.log('HTTP', r.status(), r.url()));
+page.on('pageerror', (e) => console.log('STACK', (e.stack || '').slice(0, 600)));
 const go = async (hash) => { await page.evaluate((h) => { window.location.hash = h; }, hash); await page.waitForTimeout(2000); };
 
 try {
