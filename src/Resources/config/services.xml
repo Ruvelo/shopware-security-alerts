@@ -1,0 +1,79 @@
+<?xml version="1.0" ?>
+<container xmlns="http://symfony.com/schema/dic/services"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+    <services>
+        <service id="Ruvelo\SecurityAlerts\Entity\FindingDefinition">
+            <tag name="shopware.entity.definition" entity="ruvelo_security_alerts_finding"/>
+        </service>
+
+        <service id="Ruvelo\SecurityAlerts\Service\SystemConfigSettings">
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+        </service>
+        <service id="Ruvelo\SecurityAlerts\Service\Settings" alias="Ruvelo\SecurityAlerts\Service\SystemConfigSettings"/>
+
+        <service id="Ruvelo\SecurityAlerts\Service\DalFindingStore">
+            <argument type="service" id="ruvelo_security_alerts_finding.repository"/>
+        </service>
+        <service id="Ruvelo\SecurityAlerts\Service\FindingStore" alias="Ruvelo\SecurityAlerts\Service\DalFindingStore"/>
+
+        <service id="Ruvelo\SecurityAlerts\Service\PluginInventory">
+            <argument type="service" id="plugin.repository"/>
+        </service>
+        <service id="Ruvelo\SecurityAlerts\Service\Inventory" alias="Ruvelo\SecurityAlerts\Service\PluginInventory"/>
+
+        <service id="Ruvelo\SecurityAlerts\Service\HttpScannerProvider">
+            <argument>%kernel.project_dir%</argument>
+            <argument type="service" id="Ruvelo\SecurityAlerts\Service\Settings"/>
+            <argument type="service" id="cache.object"/>
+        </service>
+        <service id="Ruvelo\SecurityAlerts\Service\ScannerProvider" alias="Ruvelo\SecurityAlerts\Service\HttpScannerProvider"/>
+
+        <service id="Ruvelo\SecurityAlerts\Service\SystemConfigCheckState">
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+        </service>
+        <service id="Ruvelo\SecurityAlerts\Service\CheckState" alias="Ruvelo\SecurityAlerts\Service\SystemConfigCheckState"/>
+
+        <service id="Ruvelo\SecurityAlerts\Service\Notifier">
+            <argument type="service" id="Ruvelo\SecurityAlerts\Service\Settings"/>
+            <argument type="service" id="Ruvelo\SecurityAlerts\Service\FindingStore"/>
+            <argument type="service" id="Shopware\Core\Content\Mail\Service\MailService"/>
+            <argument type="service" id="logger"/>
+        </service>
+
+        <service id="Ruvelo\SecurityAlerts\Service\Checker">
+            <argument type="service" id="Ruvelo\SecurityAlerts\Service\ScannerProvider"/>
+            <argument type="service" id="Ruvelo\SecurityAlerts\Service\FindingStore"/>
+            <argument type="service" id="Ruvelo\SecurityAlerts\Service\Inventory"/>
+            <argument type="service" id="Ruvelo\SecurityAlerts\Service\Notifier"/>
+            <argument type="service" id="Ruvelo\SecurityAlerts\Service\CheckState"/>
+            <argument type="service" id="event_dispatcher"/>
+        </service>
+
+        <service id="Ruvelo\SecurityAlerts\Console\CheckCommand">
+            <argument type="service" id="Ruvelo\SecurityAlerts\Service\Checker"/>
+            <tag name="console.command"/>
+        </service>
+
+        <service id="Ruvelo\SecurityAlerts\ScheduledTask\CheckTask">
+            <tag name="shopware.scheduled.task"/>
+        </service>
+        <service id="Ruvelo\SecurityAlerts\ScheduledTask\CheckTaskHandler">
+            <argument type="service" id="scheduled_task.repository"/>
+            <argument type="service" id="logger"/>
+            <argument type="service" id="Ruvelo\SecurityAlerts\Service\Checker"/>
+            <argument type="service" id="logger"/>
+            <tag name="messenger.message_handler"/>
+        </service>
+
+        <service id="Ruvelo\SecurityAlerts\Controller\SecurityAlertsController" public="true">
+            <argument type="service" id="Ruvelo\SecurityAlerts\Service\Checker"/>
+            <argument type="service" id="Ruvelo\SecurityAlerts\Service\FindingStore"/>
+            <argument type="service" id="Ruvelo\SecurityAlerts\Service\Inventory"/>
+            <argument type="service" id="Ruvelo\SecurityAlerts\Service\CheckState"/>
+            <call method="setContainer">
+                <argument type="service" id="service_container"/>
+            </call>
+        </service>
+    </services>
+</container>
