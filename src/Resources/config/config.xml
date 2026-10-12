@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/shopware/trunk/src/Core/System/SystemConfig/Schema/config.xsd">
+    <card>
+        <title>Email alerts</title>
+        <title lang="de-DE">E-Mail-Benachrichtigungen</title>
+
+        <input-field type="bool">
+            <name>enabled</name>
+            <label>Send email alerts</label>
+            <label lang="de-DE">E-Mail-Benachrichtigungen senden</label>
+            <defaultValue>true</defaultValue>
+            <helpText>The check runs daily either way; this only controls email.</helpText>
+            <helpText lang="de-DE">Die Prüfung läuft täglich in jedem Fall; das steuert nur die E-Mails.</helpText>
+        </input-field>
+
+        <input-field type="text">
+            <name>emails</name>
+            <label>Send alerts to</label>
+            <label lang="de-DE">Alarme senden an</label>
+            <placeholder>you@example.com, ops@example.com</placeholder>
+            <helpText>Email addresses separated by commas. Empty means no email.</helpText>
+            <helpText lang="de-DE">E-Mail-Adressen, durch Kommas getrennt. Leer bedeutet keine E-Mail.</helpText>
+        </input-field>
+
+        <input-field type="single-select">
+            <name>minimumSeverity</name>
+            <label>Minimum severity</label>
+            <label lang="de-DE">Mindest-Schweregrad</label>
+            <defaultValue>medium</defaultValue>
+            <helpText>Exploited vulnerabilities are always sent, whatever their severity.</helpText>
+            <helpText lang="de-DE">Aktiv ausgenutzte Lücken werden immer gesendet, unabhängig vom Schweregrad.</helpText>
+            <options>
+                <option><id>critical</id><name>Critical</name><name lang="de-DE">Kritisch</name></option>
+                <option><id>high</id><name>High</name><name lang="de-DE">Hoch</name></option>
+                <option><id>medium</id><name>Medium</name><name lang="de-DE">Mittel</name></option>
+                <option><id>low</id><name>Low</name><name lang="de-DE">Niedrig</name></option>
+            </options>
+        </input-field>
+    </card>
+
+    <card>
+        <title>Coverage</title>
+        <title lang="de-DE">Umfang</title>
+
+        <input-field type="bool">
+            <name>includeDev</name>
+            <label>Also check development packages</label>
+            <label lang="de-DE">Auch Entwicklungspakete prüfen</label>
+            <defaultValue>false</defaultValue>
+            <helpText>Packages from "packages-dev" in composer.lock. Production shops normally do not install them.</helpText>
+            <helpText lang="de-DE">Pakete aus "packages-dev" in der composer.lock. Produktivshops installieren sie normalerweise nicht.</helpText>
+        </input-field>
+    </card>
+</config>
