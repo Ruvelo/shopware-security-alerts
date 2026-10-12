@@ -1,4 +1,12 @@
 .ruvelo-security-alerts {
+    .sw-data-grid__cell-content {
+        white-space: normal;
+    }
+
+    .sw-label {
+        margin-left: 8px;
+    }
+
     &__note {
         margin-bottom: 16px;
 
