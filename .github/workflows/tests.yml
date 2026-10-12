@@ -184,7 +184,7 @@ jobs:
           bin/console ruvelo:security-alerts:check --dry-run --fresh >/dev/null
           set +e; bin/console ruvelo:security-alerts:check --fail-on=nonsense; [ $? -eq 2 ] || { echo "::error::bad --fail-on must exit 2"; exit 1; }
 
-      - name: Vulnerable, exploited package: findings, email, exit code
+      - name: An exploited vulnerability gives findings, an email and exit code 1
         working-directory: shop
         run: |
           # Pretend livewire/livewire 3.6.2 is installed: a real advisory that CISA lists as exploited.
