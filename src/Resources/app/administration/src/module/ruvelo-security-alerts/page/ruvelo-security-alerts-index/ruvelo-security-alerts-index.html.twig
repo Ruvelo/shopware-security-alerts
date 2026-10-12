@@ -42,36 +42,36 @@
                     {{ $tc('ruvelo-security-alerts.messages.exploited', exploitedCount, { count: exploitedCount }) }}
                 </p>
 
-                <sw-data-grid
-                    v-if="findings.length > 0"
-                    :data-source="findings"
-                    :columns="columns"
-                    :show-selection="false"
-                    :show-actions="false"
-                    :plain-appearance="true"
-                >
-                    <template #column-package="{ item }">
-                        <strong>{{ item.package }}</strong>
-                        <sw-label
-                            v-if="item.exploited"
-                            variant="danger"
-                            appearance="pill"
-                            size="small"
-                        >
-                            {{ $tc('ruvelo-security-alerts.labels.exploited') }}
-                        </sw-label>
-                    </template>
-
-                    <template #column-title="{ item }">
-                        <a v-if="item.link" :href="item.link" target="_blank" rel="noopener noreferrer">{{ item.title }}</a>
-                        <span v-else>{{ item.title }}</span>
-                        <div v-if="item.cve" class="ruvelo-security-alerts__cve">{{ item.cve }}</div>
-                    </template>
-
-                    <template #column-fixed_in="{ item }">
-                        {{ item.fixed_in || '–' }}
-                    </template>
-                </sw-data-grid>
+                <table v-if="findings.length > 0" class="ruvelo-security-alerts__table">
+                    <thead>
+                        <tr>
+                            <th v-for="column in columns" :key="column.property">{{ $tc(column.label) }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="item in findings" :key="item.key">
+                            <td>
+                                <strong>{{ item.package }}</strong>
+                                <sw-label
+                                    v-if="item.exploited"
+                                    variant="danger"
+                                    appearance="pill"
+                                    size="small"
+                                >
+                                    {{ $tc('ruvelo-security-alerts.labels.exploited') }}
+                                </sw-label>
+                            </td>
+                            <td>{{ item.installed }}</td>
+                            <td>
+                                <a v-if="item.link" :href="item.link" target="_blank" rel="noopener noreferrer">{{ item.title }}</a>
+                                <span v-else>{{ item.title }}</span>
+                                <div v-if="item.cve" class="ruvelo-security-alerts__cve">{{ item.cve }}</div>
+                            </td>
+                            <td>{{ item.severity_label }}</td>
+                            <td>{{ item.fixed_in || '–' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </sw-card>
 
             <sw-card

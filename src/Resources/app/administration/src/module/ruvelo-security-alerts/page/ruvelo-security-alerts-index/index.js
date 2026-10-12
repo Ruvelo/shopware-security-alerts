@@ -27,11 +27,11 @@ Component.register('ruvelo-security-alerts-index', {
     computed: {
         columns() {
             return [
-                { property: 'package', label: 'ruvelo-security-alerts.columns.package', primary: true, width: '210px' },
-                { property: 'installed', label: 'ruvelo-security-alerts.columns.installed', width: '80px' },
-                { property: 'title', label: 'ruvelo-security-alerts.columns.advisory', width: '380px' },
-                { property: 'severity_label', label: 'ruvelo-security-alerts.columns.severity', width: '90px' },
-                { property: 'fixed_in', label: 'ruvelo-security-alerts.columns.fixedIn', width: '110px' },
+                { property: 'package', label: 'ruvelo-security-alerts.columns.package', primary: true },
+                { property: 'installed', label: 'ruvelo-security-alerts.columns.installed' },
+                { property: 'title', label: 'ruvelo-security-alerts.columns.advisory' },
+                { property: 'severity_label', label: 'ruvelo-security-alerts.columns.severity' },
+                { property: 'fixed_in', label: 'ruvelo-security-alerts.columns.fixedIn' },
             ];
         },
 
