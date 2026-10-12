@@ -133,7 +133,7 @@ jobs:
           composer config repositories.ruvelo-plugin '{"type":"path","url":"../plugin","options":{"symlink":false}}' --json
           composer require ruvelo/shopware-security-alerts:@dev --no-update
           composer update --prefer-dist --no-progress
-          composer show shopware/core ruvelo/shopware-security-alerts ruvelo/security-advisories | grep -E '^(name|versions)'
+          for p in shopware/core ruvelo/shopware-security-alerts ruvelo/security-advisories; do composer show "$p" | grep -E '^(name|versions)'; done
 
       - name: Install Shopware
         working-directory: shop
