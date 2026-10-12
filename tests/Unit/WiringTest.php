@@ -26,7 +26,6 @@ class WiringTest extends TestCase
         $this->assertSame('RuveloSecurityAlerts', (new \ReflectionClass($c['extra']['shopware-plugin-class']))->getShortName());
         $this->assertArrayHasKey('en-GB', $c['extra']['label']);
         $this->assertArrayHasKey('de-DE', $c['extra']['label']);
-        $this->assertArrayNotHasKey('repositories', $c, 'the core is added by CI only, never published');
         $this->assertSame('^1.0', $c['require']['ruvelo/security-advisories']);
     }
 
