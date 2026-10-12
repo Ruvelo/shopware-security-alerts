@@ -1,0 +1,36 @@
+{
+  "ruvelo-security-alerts": {
+    "general": {
+      "title": "Security alerts",
+      "description": "Known vulnerabilities in shopware/core and the plugins installed with Composer."
+    },
+    "actions": {
+      "checkNow": "Check now"
+    },
+    "cards": {
+      "findings": "Known vulnerabilities",
+      "notChecked": "Not checked"
+    },
+    "columns": {
+      "package": "Package",
+      "installed": "Installed",
+      "advisory": "Advisory",
+      "severity": "Severity",
+      "fixedIn": "First safe version"
+    },
+    "labels": {
+      "exploited": "Exploited, patch now",
+      "notChecked": "not checked (not installed with Composer)"
+    },
+    "messages": {
+      "neverChecked": "Nothing has been checked yet. Press \"Check now\", or wait for the daily check.",
+      "incomplete": "The last check was incomplete, so an empty list does not mean all is well.",
+      "clean": "No known vulnerabilities in {count} Composer packages. | No known vulnerabilities in {count} Composer package. | No known vulnerabilities in {count} Composer packages.",
+      "exploited": "{count} vulnerability is known to be exploited. Patch it first. | {count} vulnerabilities are known to be exploited. Patch them first.",
+      "notChecked": "These plugins were not installed with Composer, so no advisory feed covers them. Check their vendors' release notes.",
+      "checked": "The check is done.",
+      "checkFailed": "The check failed. See the Shopware log for details.",
+      "loadFailed": "The findings could not be loaded."
+    }
+  }
+}

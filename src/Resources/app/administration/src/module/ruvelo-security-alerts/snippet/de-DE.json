@@ -1,0 +1,36 @@
+{
+  "ruvelo-security-alerts": {
+    "general": {
+      "title": "Sicherheitsmeldungen",
+      "description": "Bekannte Sicherheitslücken in shopware/core und den per Composer installierten Plugins."
+    },
+    "actions": {
+      "checkNow": "Jetzt prüfen"
+    },
+    "cards": {
+      "findings": "Bekannte Sicherheitslücken",
+      "notChecked": "Nicht geprüft"
+    },
+    "columns": {
+      "package": "Paket",
+      "installed": "Installiert",
+      "advisory": "Meldung",
+      "severity": "Schweregrad",
+      "fixedIn": "Erste sichere Version"
+    },
+    "labels": {
+      "exploited": "Wird ausgenutzt, jetzt patchen",
+      "notChecked": "nicht geprüft (nicht per Composer installiert)"
+    },
+    "messages": {
+      "neverChecked": "Es wurde noch nichts geprüft. Klicken Sie auf \"Jetzt prüfen\" oder warten Sie auf die tägliche Prüfung.",
+      "incomplete": "Die letzte Prüfung war unvollständig, eine leere Liste bedeutet also nicht, dass alles in Ordnung ist.",
+      "clean": "Keine bekannten Sicherheitslücken in {count} Composer-Paketen. | Keine bekannten Sicherheitslücken in {count} Composer-Paket. | Keine bekannten Sicherheitslücken in {count} Composer-Paketen.",
+      "exploited": "{count} Sicherheitslücke wird nachweislich ausgenutzt. Patchen Sie diese zuerst. | {count} Sicherheitslücken werden nachweislich ausgenutzt. Patchen Sie diese zuerst.",
+      "notChecked": "Diese Plugins wurden nicht per Composer installiert, daher deckt kein Advisory-Feed sie ab. Prüfen Sie die Release-Hinweise der Hersteller.",
+      "checked": "Die Prüfung ist abgeschlossen.",
+      "checkFailed": "Die Prüfung ist fehlgeschlagen. Details stehen im Shopware-Log.",
+      "loadFailed": "Die Ergebnisse konnten nicht geladen werden."
+    }
+  }
+}
