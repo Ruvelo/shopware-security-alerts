@@ -122,6 +122,11 @@ jobs:
           coverage: none
           tools: composer:v2
 
+      - uses: actions/setup-node@v4
+        if: matrix.screenshots
+        with:
+          node-version: '22'
+
       - name: Create the Shopware project
         run: composer create-project shopware/production shop '${{ matrix.shopware }}' --no-install --no-progress
 
@@ -144,6 +149,29 @@ jobs:
           bin/console system:setup --force --no-interaction --database-url="$DATABASE_URL" --app-url="$APP_URL"
           bin/console system:install --basic-setup --force --no-interaction --shop-locale=en-GB --shop-currency=EUR
           bin/console --version
+
+      - name: A plugin that is not installed with Composer (as a zip would leave it)
+        working-directory: shop
+        run: |
+          mkdir -p custom/plugins/AcmeZipDemo/src
+          cat > custom/plugins/AcmeZipDemo/composer.json <<'JSON'
+          {
+            "name": "acme/zip-demo",
+            "type": "shopware-platform-plugin",
+            "version": "1.4.2",
+            "autoload": { "psr-4": { "Acme\\ZipDemo\\": "src/" } },
+            "extra": {
+              "shopware-plugin-class": "Acme\\ZipDemo\\AcmeZipDemo",
+              "label": { "en-GB": "Acme Zip Demo" }
+            }
+          }
+          JSON
+          cat > custom/plugins/AcmeZipDemo/src/AcmeZipDemo.php <<'PHP'
+          <?php
+          namespace Acme\ZipDemo;
+          use Shopware\Core\Framework\Plugin;
+          class AcmeZipDemo extends Plugin {}
+          PHP
 
       - name: Install and activate the plugin
         working-directory: shop
@@ -262,6 +290,10 @@ jobs:
           d = json.load(open(sys.argv[1]))
           assert {"findings", "not_checked", "last_check"} <= d.keys(), d.keys()
           assert d["findings"] and d["findings"][0]["exploited"], d["findings"][:1]
+          names = [p["name"] for p in d["not_checked"]]
+          assert "AcmeZipDemo" in names, names
+          assert "RuveloSecurityAlerts" not in names, "a Composer-installed plugin must not be listed as unchecked"
+          assert "not checked" in d["not_checked"][0]["reason"]
           PY
 
           status=$(curl -s -X POST -o "$RUNNER_TEMP/check-api.json" -w '%{http_code}' -H "Authorization: Bearer $token" "$APP_URL/api/_action/ruvelo-security-alerts/check")
@@ -273,6 +305,33 @@ jobs:
           assert d["last_check"]["complete"], d["last_check"]
           PY
           echo "$token" > "$RUNNER_TEMP/token"
+
+      - name: Build the administration
+        if: matrix.screenshots
+        working-directory: shop
+        run: |
+          echo "nodejs: $(node -v)"
+          bin/build-administration.sh
+          bin/console assets:install
+
+      - name: Screenshot the administration page
+        if: matrix.screenshots
+        run: |
+          mkdir -p "$RUNNER_TEMP/shots" "$RUNNER_TEMP/pw"
+          cd "$RUNNER_TEMP/pw"
+          npm init -y >/dev/null
+          npm install playwright@1.49.1 >/dev/null
+          npx playwright install --with-deps chromium >/dev/null
+          cp "$GITHUB_WORKSPACE/plugin/.github/ci/screenshot.mjs" .
+          node screenshot.mjs "$APP_URL" "$ADMIN_USER" "$ADMIN_PASSWORD" "$RUNNER_TEMP/shots"
+
+      - name: Upload the screenshots
+        if: always() && matrix.screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-screenshots
+          path: ${{ runner.temp }}/shots
+          if-no-files-found: warn
 
       - name: Uninstall drops the table
         working-directory: shop
