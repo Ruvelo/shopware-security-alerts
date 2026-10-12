@@ -1,0 +1,11 @@
+{
+  "packages": [
+    {"name": "shopware/core", "version": "v6.6.10.0"},
+    {"name": "shopware/storefront", "version": "v6.6.10.0"},
+    {"name": "acme/shopware-widgets", "version": "2.1.0", "type": "shopware-platform-plugin"},
+    {"name": "symfony/console", "version": "v7.0.1"}
+  ],
+  "packages-dev": [
+    {"name": "phpunit/phpunit", "version": "11.0.0"}
+  ]
+}
