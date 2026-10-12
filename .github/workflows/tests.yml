@@ -233,7 +233,7 @@ jobs:
           mysql -h 127.0.0.1 -uroot -proot shopware -e "DELETE FROM ruvelo_security_alerts_finding"
           mysql -h 127.0.0.1 -uroot -proot shopware -e "UPDATE scheduled_task SET next_execution_time = NOW(3) - INTERVAL 1 MINUTE, status = 'scheduled' WHERE name = 'ruvelo.security_alerts.check'"
           timeout 40 bin/console scheduled-task:run --no-wait || true
-          timeout 90 bin/console messenger:consume async scheduled_task --limit=5 --time-limit=60 -vv || true
+          timeout 90 bin/console messenger:consume async --limit=40 --time-limit=45 -vv || true
           count=$(mysql -h 127.0.0.1 -uroot -proot shopware -N -e "SELECT COUNT(*) FROM ruvelo_security_alerts_finding")
           echo "findings stored by the scheduled task: $count"
           [ "$count" -ge 1 ]
