@@ -1,0 +1,85 @@
+{
+  "name": "ruvelo/shopware-security-alerts",
+  "description": "Security alerts for Shopware 6: tells you in the administration and by email when shopware/core or a plugin installed with Composer has a known vulnerability, loudest when it is exploited in the wild.",
+  "type": "shopware-platform-plugin",
+  "license": "MIT",
+  "keywords": ["shopware", "shopware6", "security", "advisories", "vulnerabilities", "cisa-kev"],
+  "homepage": "https://github.com/Ruvelo/shopware-security-alerts",
+  "authors": [
+    {
+      "name": "François Bultez",
+      "homepage": "https://github.com/francoisbultez",
+      "role": "Developer"
+    }
+  ],
+  "require": {
+    "php": "^8.2",
+    "guzzlehttp/guzzle": "^7.0",
+    "guzzlehttp/psr7": "^2.0",
+    "ruvelo/security-advisories": "^1.0",
+    "shopware/core": "~6.6.0||~6.7.0"
+  },
+  "require-dev": {
+    "laravel/pint": "^1.18",
+    "phpstan/phpstan": "^2.0",
+    "phpunit/phpunit": "^11.5|^12.0",
+    "nyholm/psr7": "^1.8"
+  },
+  "autoload": {
+    "psr-4": {
+      "Ruvelo\\SecurityAlerts\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Ruvelo\\SecurityAlerts\\Tests\\": "tests/"
+    },
+    "files": ["tests/Support/Fakes.php", "tests/Support/Harness.php"]
+  },
+  "extra": {
+    "shopware-plugin-class": "Ruvelo\\SecurityAlerts\\RuveloSecurityAlerts",
+    "label": {
+      "en-GB": "Ruvelo Security Alerts",
+      "de-DE": "Ruvelo Security Alerts"
+    },
+    "description": {
+      "en-GB": "Tells you when shopware/core or a plugin installed with Composer has a known vulnerability, and when it is exploited in the wild.",
+      "de-DE": "Meldet bekannte Sicherheitslücken in shopware/core und per Composer installierten Plugins, und wenn sie aktiv ausgenutzt werden."
+    },
+    "manufacturerLink": {
+      "en-GB": "https://github.com/Ruvelo/shopware-security-alerts",
+      "de-DE": "https://github.com/Ruvelo/shopware-security-alerts"
+    },
+    "supportLink": {
+      "en-GB": "https://github.com/Ruvelo/shopware-security-alerts/issues",
+      "de-DE": "https://github.com/Ruvelo/shopware-security-alerts/issues"
+    }
+  },
+  "scripts": {
+    "test": "phpunit",
+    "lint": "pint --test",
+    "format": "pint",
+    "analyse": "phpstan analyse --memory-limit=1G --no-progress",
+    "check": ["@lint", "@analyse", "@test"]
+  },
+  "scripts-descriptions": {
+    "test": "Run the unit tests (no network, no Shopware install)",
+    "lint": "Check code style",
+    "format": "Fix code style",
+    "analyse": "Run static analysis",
+    "check": "Lint, analyse and test: what CI runs"
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "php-http/discovery": true,
+      "symfony/runtime": true
+    }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true,
+  "support": {
+    "issues": "https://github.com/Ruvelo/shopware-security-alerts/issues",
+    "source": "https://github.com/Ruvelo/shopware-security-alerts"
+  }
+}

@@ -1,0 +1,7 @@
+/vendor/
+/composer.lock
+/.phpunit.cache/
+.phpunit.result.cache
+/.phpstan.cache/
+/src/Resources/app/administration/node_modules/
+.DS_Store
