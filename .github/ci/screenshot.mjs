@@ -10,7 +10,7 @@ page.on('pageerror', (e) => console.log('PAGE ERROR:', e.message));
 try {
     await page.goto(`${base}/admin`, { waitUntil: 'load' });
     await page.getByLabel('Username').fill(user);
-    await page.getByLabel('Password').fill(password);
+    await page.locator('input[type="password"]').fill(password);
     await page.getByRole('button', { name: /log in/i }).click();
     await page.waitForURL(/#\/sw\/dashboard/, { timeout: 120000 });
 
