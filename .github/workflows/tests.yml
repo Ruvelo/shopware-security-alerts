@@ -1,0 +1,282 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  # ruvelo/security-advisories is tagged on GitHub but not on Packagist yet.
+  # CI resolves it from the repository; the published composer.json does not carry this.
+  CORE_REPOSITORY: https://github.com/Ruvelo/security-advisories
+
+jobs:
+  quality:
+    name: Code style and static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          composer config repositories.ruvelo-core vcs "$CORE_REPOSITORY"
+          composer update --prefer-dist --no-interaction --no-progress
+
+      - name: Check
+        run: composer check
+
+  tests:
+    name: Unit tests · PHP ${{ matrix.php }} · ${{ matrix.stability }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4']
+        stability: [prefer-stable]
+        include:
+          - php: '8.2'
+            stability: prefer-lowest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, intl, gd, zip, sodium
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          composer config repositories.ruvelo-core vcs "$CORE_REPOSITORY"
+          composer update --${{ matrix.stability }} --prefer-dist --no-interaction --no-progress
+
+      - name: Unit tests
+        run: vendor/bin/phpunit
+
+  install:
+    name: Real install · Shopware ${{ matrix.shopware }} · PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shopware: '~6.7.0'
+            php: '8.3'
+            screenshots: true
+          - shopware: '~6.6.0'
+            php: '8.2'
+            screenshots: false
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: shopware
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+      mailpit:
+        image: axllent/mailpit:v1.21
+        ports:
+          - 1025:1025
+          - 8025:8025
+
+    env:
+      APP_ENV: prod
+      APP_URL: http://127.0.0.1:8000
+      DATABASE_URL: mysql://root:root@127.0.0.1:3306/shopware
+      MAILER_DSN: smtp://127.0.0.1:1025
+      ADMIN_USER: admin
+      ADMIN_PASSWORD: shopware
+      COMPOSER_NO_INTERACTION: '1'
+
+    steps:
+      - name: Check out the plugin
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: ctype, curl, dom, fileinfo, gd, iconv, intl, mbstring, pdo_mysql, simplexml, sodium, xml, zip, zlib
+          ini-values: memory_limit=-1
+          coverage: none
+          tools: composer:v2
+
+      - name: Create the Shopware project
+        run: composer create-project shopware/production shop '${{ matrix.shopware }}' --no-install --no-progress
+
+      - name: Add the core (VCS) and the plugin (path), then install
+        working-directory: shop
+        run: |
+          composer config audit.block-insecure false
+          composer config repositories.ruvelo-core vcs "$CORE_REPOSITORY"
+          composer config repositories.ruvelo-plugin '{"type":"path","url":"../plugin","options":{"symlink":false}}' --json
+          composer require ruvelo/shopware-security-alerts:@dev --no-update
+          composer update --prefer-dist --no-progress
+          composer show -s shopware/core | grep -E '^(name|versions)'
+          composer show ruvelo/shopware-security-alerts ruvelo/security-advisories | grep -E '^(name|versions)'
+
+      - name: Install Shopware
+        working-directory: shop
+        run: |
+          bin/console system:setup --force --no-interaction \
+            --database-url="$DATABASE_URL" --app-url="$APP_URL" --app-env=prod --mailer-url="$MAILER_DSN" \
+            --es-enabled=0 --blue-green=0 --cdn-strategy=physical_filename --composer-home="$HOME/.composer" || \
+          bin/console system:setup --force --no-interaction --database-url="$DATABASE_URL" --app-url="$APP_URL"
+          bin/console system:install --basic-setup --force --no-interaction --shop-locale=en-GB --shop-currency=EUR
+          bin/console --version
+
+      - name: Install and activate the plugin
+        working-directory: shop
+        run: |
+          bin/console plugin:refresh
+          bin/console plugin:list | tee /dev/stderr | grep RuveloSecurityAlerts
+          bin/console plugin:install --activate RuveloSecurityAlerts
+          bin/console plugin:list | grep RuveloSecurityAlerts | grep -i 'yes'
+          bin/console cache:clear
+
+      - name: The table and the scheduled task exist
+        working-directory: shop
+        run: |
+          mysql -h 127.0.0.1 -uroot -proot shopware -e 'DESCRIBE ruvelo_security_alerts_finding'
+          bin/console scheduled-task:register
+          mysql -h 127.0.0.1 -uroot -proot shopware -N -e "SELECT name, run_interval FROM scheduled_task WHERE name = 'ruvelo.security_alerts.check'" | tee "$RUNNER_TEMP/task.txt"
+          grep -q "ruvelo.security_alerts.check.*86400" "$RUNNER_TEMP/task.txt"
+          bin/console scheduled-task:list | grep ruvelo.security_alerts.check
+          mysql -h 127.0.0.1 -uroot -proot shopware -N -e "SELECT COUNT(*) FROM migration WHERE class LIKE 'Ruvelo%'" | grep -q '^1$'
+          bin/console ruvelo:security-alerts:check --help
+
+      - name: Check command with real network access
+        working-directory: shop
+        run: |
+          set +e
+          bin/console ruvelo:security-alerts:check --json > "$RUNNER_TEMP/check.json" 2> "$RUNNER_TEMP/check.err"
+          code=$?
+          set -e
+          cat "$RUNNER_TEMP/check.err"
+          cat "$RUNNER_TEMP/check.json"
+          echo "exit code: $code"
+          python3 -I - "$RUNNER_TEMP/check.json" <<'PY'
+          import json, sys
+          d = json.load(open(sys.argv[1]))
+          assert {"clean", "complete", "findings", "packages", "not_checked", "problems"} <= d.keys(), d.keys()
+          assert d["packages"]["composer"] > 100, d["packages"]
+          assert d["complete"], d["problems"]
+          print("valid JSON,", len(d["findings"]), "findings,", d["packages"], "packages")
+          PY
+          [ "$code" -le 1 ] || { echo "::error::exit code $code means a source failed"; exit 1; }
+          bin/console ruvelo:security-alerts:check --dry-run --fresh >/dev/null
+          set +e; bin/console ruvelo:security-alerts:check --fail-on=nonsense; [ $? -eq 2 ] || { echo "::error::bad --fail-on must exit 2"; exit 1; }
+
+      - name: Vulnerable, exploited package: findings, email, exit code
+        working-directory: shop
+        run: |
+          # Pretend livewire/livewire 3.6.2 is installed: a real advisory that CISA lists as exploited.
+          cp composer.lock "$RUNNER_TEMP/composer.lock.orig"
+          python3 -I - <<'PY'
+          import json
+          d = json.load(open("composer.lock"))
+          d["packages"].append({"name": "livewire/livewire", "version": "v3.6.2"})
+          json.dump(d, open("composer.lock", "w"))
+          PY
+          bin/console system:config:set RuveloSecurityAlerts.config.emails ci@example.com
+          bin/console system:config:set core.basicInformation.email shop@example.com
+          set +e
+          bin/console ruvelo:security-alerts:check --json --fail-on=exploited > "$RUNNER_TEMP/bad.json"
+          code=$?
+          set -e
+          cat "$RUNNER_TEMP/bad.json"
+          [ "$code" -eq 1 ] || { echo "::error::expected exit 1 for an exploited finding, got $code"; exit 1; }
+          python3 -I - "$RUNNER_TEMP/bad.json" <<'PY'
+          import json, sys
+          d = json.load(open(sys.argv[1]))
+          assert d["findings"][0]["package"] == "livewire/livewire" and d["findings"][0]["exploited"], d["findings"][:1]
+          PY
+          sleep 2
+          curl -s http://127.0.0.1:8025/api/v1/messages | tee "$RUNNER_TEMP/mail.json"
+          python3 -I - "$RUNNER_TEMP/mail.json" <<'PY'
+          import json, sys
+          m = json.load(open(sys.argv[1]))
+          assert m["total"] == 1, m["total"]
+          assert m["messages"][0]["Subject"].startswith("Exploited"), m["messages"][0]["Subject"]
+          assert m["messages"][0]["To"][0]["Address"] == "ci@example.com"
+          PY
+          id=$(curl -s http://127.0.0.1:8025/api/v1/messages | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["messages"][0]["ID"])')
+          curl -s "http://127.0.0.1:8025/api/v1/message/$id" | python3 -I -c 'import json,sys; m=json.load(sys.stdin); assert "livewire/livewire" in m["Text"] and "EXPLOITED" in m["Text"], m["Text"]; assert "valtry" not in (m["Text"]+m["HTML"]).lower()'
+          # A second run is quiet: nothing new.
+          set +e; bin/console ruvelo:security-alerts:check >/dev/null; set -e
+          [ "$(curl -s http://127.0.0.1:8025/api/v1/messages | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["total"])')" = 1 ]
+          mysql -h 127.0.0.1 -uroot -proot shopware -e 'SELECT finding_key, severity, exploited, notified_exploited FROM ruvelo_security_alerts_finding'
+
+      - name: The scheduled task runs the check
+        working-directory: shop
+        run: |
+          mysql -h 127.0.0.1 -uroot -proot shopware -e "DELETE FROM ruvelo_security_alerts_finding"
+          mysql -h 127.0.0.1 -uroot -proot shopware -e "UPDATE scheduled_task SET next_execution_time = NOW(3) - INTERVAL 1 MINUTE, status = 'scheduled' WHERE name = 'ruvelo.security_alerts.check'"
+          timeout 40 bin/console scheduled-task:run --no-wait || true
+          timeout 90 bin/console messenger:consume async scheduled_task --limit=5 --time-limit=60 -vv || true
+          count=$(mysql -h 127.0.0.1 -uroot -proot shopware -N -e "SELECT COUNT(*) FROM ruvelo_security_alerts_finding")
+          echo "findings stored by the scheduled task: $count"
+          [ "$count" -ge 1 ]
+
+      - name: The administration API route answers 200 with a token
+        working-directory: shop
+        run: |
+          PHP_CLI_SERVER_WORKERS=4 php -S 127.0.0.1:8000 -t public > "$RUNNER_TEMP/server.log" 2>&1 &
+          for i in $(seq 1 30); do curl -s -o /dev/null "$APP_URL/api/_info/version" && break; sleep 1; done
+          token=$(curl -s -X POST "$APP_URL/api/oauth/token" -H 'Content-Type: application/json' \
+            -d "{\"grant_type\":\"password\",\"client_id\":\"administration\",\"scopes\":\"write\",\"username\":\"$ADMIN_USER\",\"password\":\"$ADMIN_PASSWORD\"}" \
+            | python3 -I -c 'import json,sys; print(json.load(sys.stdin)["access_token"])')
+          [ -n "$token" ]
+          echo "token acquired"
+
+          # No token: refused
+          [ "$(curl -s -o /dev/null -w '%{http_code}' "$APP_URL/api/_action/ruvelo-security-alerts/findings")" = 401 ]
+
+          status=$(curl -s -o "$RUNNER_TEMP/findings.json" -w '%{http_code}' -H "Authorization: Bearer $token" "$APP_URL/api/_action/ruvelo-security-alerts/findings")
+          echo "GET findings: HTTP $status"; cat "$RUNNER_TEMP/findings.json"; echo
+          [ "$status" = 200 ] || { tail -n 40 "$RUNNER_TEMP/server.log"; tail -n 30 var/log/*.log; exit 1; }
+          python3 -I - "$RUNNER_TEMP/findings.json" <<'PY'
+          import json, sys
+          d = json.load(open(sys.argv[1]))
+          assert {"findings", "not_checked", "last_check"} <= d.keys(), d.keys()
+          assert d["findings"] and d["findings"][0]["exploited"], d["findings"][:1]
+          PY
+
+          status=$(curl -s -X POST -o "$RUNNER_TEMP/check-api.json" -w '%{http_code}' -H "Authorization: Bearer $token" "$APP_URL/api/_action/ruvelo-security-alerts/check")
+          echo "POST check: HTTP $status"; head -c 600 "$RUNNER_TEMP/check-api.json"; echo
+          [ "$status" = 200 ] || { tail -n 40 "$RUNNER_TEMP/server.log"; tail -n 30 var/log/*.log; exit 1; }
+          python3 -I - "$RUNNER_TEMP/check-api.json" <<'PY'
+          import json, sys
+          d = json.load(open(sys.argv[1]))
+          assert d["last_check"]["complete"], d["last_check"]
+          PY
+          echo "$token" > "$RUNNER_TEMP/token"
+
+      - name: Uninstall drops the table
+        working-directory: shop
+        run: |
+          bin/console plugin:uninstall RuveloSecurityAlerts
+          [ "$(mysql -h 127.0.0.1 -uroot -proot shopware -N -e "SHOW TABLES LIKE 'ruvelo_security_alerts_finding'" | wc -l)" = 0 ]
+
+      - name: Logs on failure
+        if: failure()
+        working-directory: shop
+        run: |
+          tail -n 80 var/log/*.log 2>/dev/null || true
