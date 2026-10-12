@@ -15,6 +15,9 @@ try {
     await page.locator('input[type="password"]').fill(password);
     await page.getByRole('button', { name: /log in/i }).click();
     await page.waitForURL(/#\/sw\/dashboard/, { timeout: 120000 });
+    await page.locator('.sw-admin-menu').waitFor({ timeout: 120000 });
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(3000);
 
     await go('#/ruvelo/security/alerts/index');
     await page.getByText('Known vulnerabilities').first().waitFor({ timeout: 60000 });
