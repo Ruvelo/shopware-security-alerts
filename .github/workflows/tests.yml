@@ -191,7 +191,7 @@ jobs:
           mysql -h 127.0.0.1 -uroot -proot shopware -N -e "SELECT name, run_interval FROM scheduled_task WHERE name = 'ruvelo.security_alerts.check'" | tee "$RUNNER_TEMP/task.txt"
           grep -q "ruvelo.security_alerts.check.*86400" "$RUNNER_TEMP/task.txt"
           bin/console scheduled-task:list | grep ruvelo.security_alerts.check
-          mysql -h 127.0.0.1 -uroot -proot shopware -N -e "SELECT COUNT(*) FROM migration WHERE class LIKE 'Ruvelo%'" | grep -q '^1$'
+          mysql -h 127.0.0.1 -uroot -proot shopware -N -e "SELECT COUNT(*) FROM migration WHERE class LIKE 'Ruvelo%'" | grep -q '^2$'
           bin/console ruvelo:security-alerts:check --help
 
       - name: Check command with real network access
