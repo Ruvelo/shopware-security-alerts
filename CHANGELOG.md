@@ -4,6 +4,32 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] - 2026-10-13
+
+Requires `ruvelo/security-advisories` ^1.1. Backwards compatible: the command, its options and exit codes, the event, the administration API routes and the configuration keys keep working, and a shop upgrading from 1.0 gets no new alerts and no repeated emails.
+
+### Added
+
+- Valtry's signed Advisory API is the default advisory source, with Packagist and CISA used automatically whenever Valtry cannot answer (unreachable, slow, an error, an answer that does not verify, or stale data). Package names are sent to Valtry, never versions; answers are verified against keys pinned in the core library.
+- Plugin setting "Advisory source": *Valtry first, public sources as fallback* (default) or *Public sources only*. `RUVELO_ADVISORIES_SOURCE=public` in the environment does the same and wins over the setting.
+- The source that answered is shown in the administration page, in the command output and in the JSON (`source`, `sources`).
+- `unchecked` and `notes` in the JSON, from the core's report. `not_checked` stays as it was.
+- Migration `Migration1791846000AddLastSeenToFinding`: a `last_seen` column keeps each finding as last seen, so the same vulnerability named differently by another source (an advisory id versus a CVE, say) is recognised as the same finding.
+
+### Changed
+
+- Zip-installed plugins are now reported through the core's `Report::$unchecked` instead of a separate inventory lookup in the checker. The administration API's `not_checked` and `last_check` now come from the last stored check.
+- Findings are stored under the key they were first stored with, and an entry is matched by its alternative keys (id, CVE, aliases). Switching the advisory source, or a different source winning, no longer re-sends an email or marks a finding resolved and new.
+- The README and the setting's help text say plainly what is sent where.
+
+### Internal
+
+- `Checker`, `CheckOutcome`, `FindingStore`, `Settings` and `HttpScannerProvider` constructors and methods changed (the plugin's services, not its documented interface).
+
+### Why 1.1.0 and not 2.0.0
+
+Nothing in the documented public interface (command, JSON keys, event, routes, configuration) was removed or renamed, and the JSON only gained keys. The classes under `Service\` are wired by the plugin's own `services.xml` and are not documented API.
+
 ## [1.0.0] - 2026-10-12
 
 First release.

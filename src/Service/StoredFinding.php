@@ -45,6 +45,28 @@ final readonly class StoredFinding
     }
 
     /**
+     * What the core would have as the finding, from the columns alone (Finding::fromArray() reads it):
+     * for a row 1.0 stored, which kept no copy of the finding.
+     *
+     * @return array<string, mixed>
+     */
+    public function snapshot(): array
+    {
+        return [
+            'ecosystem' => 'composer',
+            'package' => $this->package,
+            'installed' => $this->installed,
+            'advisory_id' => $this->advisoryId,
+            'title' => $this->title,
+            'severity' => $this->severity->value,
+            'link' => $this->link,
+            'cve' => $this->cve,
+            'fixed_in' => $this->fixedIn,
+            'dev' => $this->isDev,
+        ];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(): array

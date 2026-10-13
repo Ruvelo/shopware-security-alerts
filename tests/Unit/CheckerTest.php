@@ -24,7 +24,7 @@ class CheckerTest extends TestCase
         $h = new Harness();
         $outcome = $h->checker->scan();
 
-        $this->assertSame(['composer' => 4], $outcome->report->packages);
+        $this->assertSame(['composer' => 4, 'extension' => 1], $outcome->report->packages);
         $this->assertTrue($outcome->report->isComplete());
     }
 
@@ -35,8 +35,8 @@ class CheckerTest extends TestCase
 
         $this->assertTrue($outcome->report->isComplete());
         $this->assertSame([], $outcome->report->problems);
-        $this->assertCount(1, $outcome->notChecked);
-        $this->assertSame('Acme_Zip', $outcome->notChecked[0]->name);
+        $this->assertCount(1, $outcome->report->unchecked);
+        $this->assertSame('Acme_Zip', $outcome->notChecked()[0]->name);
         $this->assertSame('not checked (not installed with Composer)', $outcome->toArray()['not_checked'][0]['reason']);
         $this->assertSame('1.2.3', $outcome->toArray()['not_checked'][0]['version']);
     }

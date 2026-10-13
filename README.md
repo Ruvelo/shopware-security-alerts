@@ -38,14 +38,28 @@ bin/build-administration.sh
 - **Only what is new.** Findings are stored, so you get an email for a new finding, or for one that has *become* exploited, and not the same list every morning.
 - **A fix version.** For each finding, the first version that is not affected, matched locally with `composer/semver`.
 - **Everywhere you need it.** A daily scheduled task, a page in the administration, an email, a console command for CI, and an event for your own tooling.
-- **Free sources, no keys.** Packagist's security advisories and the CISA catalogue, both public.
+- **Free, no keys.** Advisories come from Valtry's signed Advisory API, with Packagist's security advisories and the CISA catalogue as automatic fallback, all without an account. One setting, or one environment variable, keeps every request off Valtry (see [What it sends](#what-it-sends)).
 - **Cheap.** A handful of HTTPS requests a day.
 
 Watching many shops? [Valtry](https://valtry.co.uk/?utm_source=ruvelo&utm_medium=github&utm_campaign=shopware-security-alerts) checks every site from the outside, daily.
 
 ## What it sends
 
-Only **package names** leave your server, to `packagist.org`, and a plain download of the whole catalogue from `cisa.gov`. Versions are matched on your server, so nobody learns which version you run. No shop URL, no customer or order data, no account, no keys. The requests use Guzzle (already part of Shopware), which honours `HTTP_PROXY` and `HTTPS_PROXY`.
+By default the plugin asks **Valtry's Advisory API** first, and falls back to the public sources on its own whenever Valtry cannot answer.
+
+| Path | Used for | What leaves your server |
+|---|---|---|
+| Valtry Advisory API (default) | Advisories for the Composer packages, and whether CISA lists each as exploited | **Package names only**, and a random nonce. Never versions: they are matched on your server. |
+| Packagist (fallback, or opted out) | Advisories for the Composer packages | **Package names only.** |
+| CISA catalogue (fallback, or opted out) | Exploited in the wild | Nothing: the whole catalogue is downloaded. |
+
+- **Versions never leave the server.** Neither does the shop URL, customer or order data, or the names of plugins that are not installed with Composer.
+- **Answers are signed.** Every Valtry answer carries an Ed25519 signature that is checked against public keys built into the plugin's core library, plus the nonce and the list of packages asked about. An answer that does not verify is discarded.
+- **It falls back automatically.** If Valtry cannot be reached within 5 seconds, answers with an error, sends an answer that does not verify, or says its data is out of date, the check uses Packagist and CISA instead (and leaves Valtry alone for five minutes). The administration page and the command say which source answered.
+- **Valtry does not log or store the names it is sent**, or pair them with your address. Its privacy terms are on its Advisory API page.
+- **One-line opt-out.** Set *Advisory source* to *Public sources only* in the plugin settings, or set `RUVELO_ADVISORIES_SOURCE=public` in the server environment (which wins over the setting). Then only `packagist.org` and `cisa.gov` are contacted, exactly as in version 1.0.
+
+There is no account and there are no keys. The requests use Guzzle (already part of Shopware), which honours `HTTP_PROXY` and `HTTPS_PROXY`.
 
 ## What it does not cover
 
@@ -86,6 +100,7 @@ Settings, System, Plugins, then Ruvelo Security Alerts (or Extensions, My extens
 | Send email alerts | on | Emails are sent only when this is on **and** there are recipients. The check runs daily either way. |
 | Send alerts to | empty | Comma-separated addresses. Empty means no email. |
 | Minimum severity | medium | Findings below it are not emailed. Exploited findings always are. |
+| Advisory source | Valtry first | *Valtry first, public sources as fallback* (names only, signed answers) or *Public sources only* (Packagist and CISA, Valtry is never contacted). `RUVELO_ADVISORIES_SOURCE=public` in the environment forces the second. |
 | Also check development packages | off | Include `packages-dev` from `composer.lock`. |
 
 The email goes through Shopware's mail service, so your mail settings (and `MAILER_DSN`) apply. The sender is the shop's own address (`core.basicInformation.email`), or the first recipient when the shop has none. It lists exploited findings first and contains nothing but the findings.
@@ -108,19 +123,20 @@ bin/console ruvelo:security-alerts:check [--json] [--fail-on=exploited|critical|
 | `--dry-run` | Only report: nothing stored, no email, no event |
 | `--fresh` | Ignore cached advisories |
 
-Exit codes: `0` fine, `1` a finding matched `--fail-on`, `2` the check was incomplete (Packagist or CISA unreachable, or `composer.lock` unreadable) or an option is wrong. "No findings" is not "clean" when the exit code is 2.
+Exit codes: `0` fine, `1` a finding matched `--fail-on`, `2` the check was incomplete (no advisory source could answer, or CISA unreachable, or `composer.lock` unreadable) or an option is wrong. "No findings" is not "clean" when the exit code is 2.
 
 ```bash
 bin/console ruvelo:security-alerts:check --dry-run --json --fail-on=exploited > alerts.json
 ```
 
-The JSON is the core's report (`checked_at`, `clean`, `complete`, `packages`, `counts`, `problems`, `findings`) plus `not_checked`:
+The JSON is the core's report (`checked_at`, `clean`, `complete`, `source`, `sources`, `packages`, `counts`, `problems`, `unchecked`, `notes`, `findings`) plus `not_checked` (the same plugins as `unchecked`, in the form 1.0 used). `source` is `valtry`, `public` or `mixed`:
 
 ```json
 {
   "clean": false,
   "complete": true,
-  "packages": { "composer": 312 },
+  "source": "valtry",
+  "packages": { "composer": 312, "extension": 1 },
   "findings": [
     { "package": "livewire/livewire", "installed": "3.6.2", "severity": "critical", "cve": "CVE-2025-54068", "exploited": true, "fixed_in": "3.6.4" }
   ],
@@ -138,7 +154,7 @@ Both routes use the administration API scope and ACL.
 
 | Route | Privilege | Does |
 |---|---|---|
-| `GET /api/_action/ruvelo-security-alerts/findings` | `ruvelo_security_alerts:read` | Stored findings (exploited first), the not-checked plugins and the last check |
+| `GET /api/_action/ruvelo-security-alerts/findings` | `ruvelo_security_alerts:read` | Stored findings (exploited first), the not-checked plugins and the last check, including which advisory source answered |
 | `POST /api/_action/ruvelo-security-alerts/check` | `ruvelo_security_alerts:check` | Runs a fresh check, as "Check now" does |
 
 ## Events
@@ -170,7 +186,7 @@ CI also runs a real install on Shopware 6.6 and 6.7 with MySQL 8: plugin install
 
 Built by [François Bultez](https://github.com/francoisbultez) at [Valtry](https://valtry.co.uk/?utm_source=ruvelo&utm_medium=github&utm_campaign=shopware-security-alerts), the website security scanner, and everyone who [contributes](https://github.com/Ruvelo/shopware-security-alerts/graphs/contributors).
 
-Advisory data comes from the [Packagist security advisories API](https://packagist.org/apidoc#list-security-advisories) and the [GitHub Advisory Database](https://github.com/advisories). The list of exploited vulnerabilities is the [CISA KEV catalogue](https://www.cisa.gov/known-exploited-vulnerabilities-catalog).
+Advisory data comes from Valtry's Advisory API and, directly, from the [Packagist security advisories API](https://packagist.org/apidoc#list-security-advisories) and the [GitHub Advisory Database](https://github.com/advisories). The list of exploited vulnerabilities is the [CISA KEV catalogue](https://www.cisa.gov/known-exploited-vulnerabilities-catalog).
 
 ## License
 

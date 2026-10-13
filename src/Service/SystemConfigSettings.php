@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Ruvelo\SecurityAlerts\Service;
 
+use Ruvelo\SecurityAdvisories\Scanner;
 use Ruvelo\SecurityAdvisories\Severity;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 
@@ -39,6 +40,13 @@ class SystemConfigSettings implements Settings
     public function includeDev(): bool
     {
         return (bool) $this->config->get(self::PREFIX.'includeDev');
+    }
+
+    public function advisorySource(): string
+    {
+        $raw = $this->config->get(self::PREFIX.'advisorySource');
+
+        return is_string($raw) && strtolower(trim($raw)) === Scanner::SOURCE_PUBLIC ? Scanner::SOURCE_PUBLIC : Scanner::SOURCE_VALTRY;
     }
 
     public function senderAddress(): ?string

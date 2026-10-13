@@ -32,6 +32,19 @@ class DalFindingStore implements FindingStore
         return $known;
     }
 
+    public function lastSeen(): array
+    {
+        $seen = [];
+        foreach ($this->entities() as $entity) {
+            $data = $entity->lastSeen !== null ? json_decode($entity->lastSeen, true) : null;
+
+            // A row 1.0 stored has no copy of the finding: rebuild what its columns say, so the CVE still matches.
+            $seen[$entity->findingKey] = is_array($data) ? $data : $this->toStored($entity)->snapshot();
+        }
+
+        return $seen;
+    }
+
     public function all(): array
     {
         $all = array_map($this->toStored(...), array_values($this->entities()));
@@ -40,7 +53,7 @@ class DalFindingStore implements FindingStore
         return $all;
     }
 
-    public function save(array $findings, array $resolved): void
+    public function save(array $findings, array $resolved, array $storedKeys = [], array $lastSeen = []): void
     {
         $context = Context::createDefaultContext();
         $existing = [];
@@ -50,11 +63,13 @@ class DalFindingStore implements FindingStore
 
         $upserts = [];
         foreach ($findings as $finding) {
-            $old = $existing[$finding->key()] ?? null;
+            // Stored under the key it was first stored with, whichever source names it now.
+            $key = $storedKeys[$finding->key()] ?? $finding->key();
+            $old = $existing[$key] ?? null;
             $kev = $finding->exploited;
             $row = [
                 'id' => $old?->getId() ?? Uuid::randomHex(),
-                'findingKey' => $finding->key(),
+                'findingKey' => $key,
                 'package' => $finding->package,
                 'installedVersion' => $finding->installed,
                 'advisoryId' => $finding->advisoryId,
@@ -66,6 +81,7 @@ class DalFindingStore implements FindingStore
                 // Once exploited, always exploited: an unreachable CISA feed must not lower the alarm.
                 'exploited' => $finding->isExploited() || ($old !== null && $old->exploited),
                 'isDev' => $finding->isDev,
+                'lastSeen' => isset($lastSeen[$key]) ? json_encode($lastSeen[$key], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) : null,
             ];
             if ($kev !== null) {
                 $row['kevAdded'] = $kev->dateAdded->format('Y-m-d');
@@ -75,11 +91,11 @@ class DalFindingStore implements FindingStore
             if ($old === null) {
                 $row['firstSeenAt'] = new \DateTimeImmutable();
             }
-            $upserts[] = $row;
+            $upserts[$key] = $row;
         }
 
         if ($upserts !== []) {
-            $this->repository->upsert($upserts, $context);
+            $this->repository->upsert(array_values($upserts), $context);
         }
 
         $gone = [];

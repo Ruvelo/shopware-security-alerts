@@ -26,6 +26,7 @@
             <argument>%kernel.project_dir%</argument>
             <argument type="service" id="Ruvelo\SecurityAlerts\Service\Settings"/>
             <argument type="service" id="cache.object"/>
+            <argument type="service" id="Ruvelo\SecurityAlerts\Service\Inventory"/>
         </service>
         <service id="Ruvelo\SecurityAlerts\Service\ScannerProvider" alias="Ruvelo\SecurityAlerts\Service\HttpScannerProvider"/>
 
@@ -44,7 +45,6 @@
         <service id="Ruvelo\SecurityAlerts\Service\Checker">
             <argument type="service" id="Ruvelo\SecurityAlerts\Service\ScannerProvider"/>
             <argument type="service" id="Ruvelo\SecurityAlerts\Service\FindingStore"/>
-            <argument type="service" id="Ruvelo\SecurityAlerts\Service\Inventory"/>
             <argument type="service" id="Ruvelo\SecurityAlerts\Service\Notifier"/>
             <argument type="service" id="Ruvelo\SecurityAlerts\Service\CheckState"/>
             <argument type="service" id="event_dispatcher"/>
@@ -69,7 +69,6 @@
         <service id="Ruvelo\SecurityAlerts\Controller\SecurityAlertsController" public="true">
             <argument type="service" id="Ruvelo\SecurityAlerts\Service\Checker"/>
             <argument type="service" id="Ruvelo\SecurityAlerts\Service\FindingStore"/>
-            <argument type="service" id="Ruvelo\SecurityAlerts\Service\Inventory"/>
             <argument type="service" id="Ruvelo\SecurityAlerts\Service\CheckState"/>
             <call method="setContainer">
                 <argument type="service" id="service_container"/>

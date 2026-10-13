@@ -210,6 +210,8 @@ jobs:
           assert {"clean", "complete", "findings", "packages", "not_checked", "problems"} <= d.keys(), d.keys()
           assert d["packages"]["composer"] > 100, d["packages"]
           assert d["complete"], d["problems"]
+          assert d["source"] in ("valtry", "public", "mixed"), d.get("source")
+          print("source:", d["source"])
           print("valid JSON,", len(d["findings"]), "findings,", d["packages"], "packages")
           PY
           [ "$code" -le 1 ] || { echo "::error::exit code $code means a source failed"; exit 1; }
@@ -304,6 +306,7 @@ jobs:
           import json, sys
           d = json.load(open(sys.argv[1]))
           assert d["last_check"]["complete"], d["last_check"]
+          assert d["last_check"]["source"] in ("valtry", "public", "mixed"), d["last_check"]
           PY
           echo "$token" > "$RUNNER_TEMP/token"
 

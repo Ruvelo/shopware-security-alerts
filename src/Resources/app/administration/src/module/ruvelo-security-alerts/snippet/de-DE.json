@@ -20,7 +20,8 @@
     },
     "labels": {
       "exploited": "Wird ausgenutzt, jetzt patchen",
-      "notChecked": "nicht geprüft (nicht per Composer installiert)"
+      "notChecked": "nicht geprüft (nicht per Composer installiert)",
+      "source": "Quelle der Hinweise"
     },
     "messages": {
       "neverChecked": "Es wurde noch nichts geprüft. Klicken Sie auf \"Jetzt prüfen\" oder warten Sie auf die tägliche Prüfung.",
@@ -31,6 +32,11 @@
       "checked": "Die Prüfung ist abgeschlossen.",
       "checkFailed": "Die Prüfung ist fehlgeschlagen. Details stehen im Shopware-Log.",
       "loadFailed": "Die Ergebnisse konnten nicht geladen werden."
+    },
+    "sources": {
+      "valtry": "Valtry (nur Paketnamen, signierte Antworten)",
+      "mixed": "Valtry und die öffentlichen Quellen (Packagist, CISA)",
+      "public": "Die öffentlichen Quellen (Packagist, CISA)"
     }
   }
 }

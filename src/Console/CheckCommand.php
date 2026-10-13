@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Ruvelo\SecurityAlerts\Console;
 
+use Ruvelo\SecurityAdvisories\Ecosystem;
 use Ruvelo\SecurityAdvisories\Exceptions\InvalidThreshold;
 use Ruvelo\SecurityAdvisories\Finding;
+use Ruvelo\SecurityAdvisories\Report;
 use Ruvelo\SecurityAdvisories\Threshold;
 use Ruvelo\SecurityAlerts\Service\CheckOutcome;
 use Ruvelo\SecurityAlerts\Service\Checker;
@@ -74,7 +76,7 @@ class CheckCommand extends Command
         }
 
         if ($report->isClean()) {
-            $output->writeln(sprintf('No known vulnerabilities in %d Composer packages.', $report->packageCount()));
+            $output->writeln(sprintf('No known vulnerabilities in %d Composer packages.', $report->packageCount(Ecosystem::Composer)));
         }
 
         foreach ($report->findings as $f) {
@@ -90,18 +92,34 @@ class CheckCommand extends Command
         }
 
         if (! $report->isClean()) {
-            $output->writeln(sprintf("\n%d findings, %d exploited, in %d Composer packages checked.", count($report->findings), count($report->exploited()), $report->packageCount()));
+            $output->writeln(sprintf("\n%d findings, %d exploited, in %d Composer packages checked.", count($report->findings), count($report->exploited()), $report->packageCount(Ecosystem::Composer)));
         }
 
-        if ($outcome->notChecked !== []) {
-            $output->writeln(sprintf("\nNot checked (not installed with Composer): %d plugins", count($outcome->notChecked)));
-            foreach ($outcome->notChecked as $package) {
+        $notChecked = $outcome->notChecked();
+        if ($notChecked !== []) {
+            $output->writeln(sprintf("\nNot checked (not installed with Composer): %d plugins", count($notChecked)));
+            foreach ($notChecked as $package) {
                 $output->writeln(sprintf('    %s %s', $package->name, $package->version));
             }
         }
 
+        foreach ($report->notes as $note) {
+            $output->writeln(sprintf('Note: %s%s', $note->package !== null ? $note->package.': ' : '', $note->message));
+        }
+
+        $output->writeln(sprintf("\nAdvisory source: %s", self::describeSource($report)));
+
         if ($outcome->notified > 0) {
             $output->writeln(sprintf("\nSent an email about %d findings.", $outcome->notified));
         }
+    }
+
+    private static function describeSource(Report $report): string
+    {
+        return match ($report->source) {
+            'valtry' => 'Valtry (signed answers; package names only)',
+            'mixed' => 'Valtry and the public feeds (Packagist, CISA)',
+            default => 'the public feeds (Packagist, CISA)',
+        };
     }
 }

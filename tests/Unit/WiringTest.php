@@ -6,6 +6,7 @@ namespace Ruvelo\SecurityAlerts\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 use Ruvelo\SecurityAlerts\Migration\Migration1791759600CreateFindingTable;
+use Ruvelo\SecurityAlerts\Migration\Migration1791846000AddLastSeenToFinding;
 use Ruvelo\SecurityAlerts\ScheduledTask\CheckTask;
 
 /**
@@ -26,7 +27,7 @@ class WiringTest extends TestCase
         $this->assertSame('RuveloSecurityAlerts', (new \ReflectionClass($c['extra']['shopware-plugin-class']))->getShortName());
         $this->assertArrayHasKey('en-GB', $c['extra']['label']);
         $this->assertArrayHasKey('de-DE', $c['extra']['label']);
-        $this->assertSame('^1.0', $c['require']['ruvelo/security-advisories']);
+        $this->assertSame('^1.1', $c['require']['ruvelo/security-advisories']);
     }
 
     public function testEveryServiceClassExists(): void
@@ -55,7 +56,7 @@ class WiringTest extends TestCase
         $xml = simplexml_load_file(self::ROOT.'/src/Resources/config/config.xml');
         $this->assertNotFalse($xml);
         $names = array_map('strval', $xml->xpath('//input-field/name') ?: []);
-        $this->assertSame(['enabled', 'emails', 'minimumSeverity', 'includeDev'], $names);
+        $this->assertSame(['enabled', 'emails', 'minimumSeverity', 'advisorySource', 'includeDev'], $names);
     }
 
     public function testTheMigrationCreatesTheTableTheDefinitionNames(): void
@@ -66,6 +67,14 @@ class WiringTest extends TestCase
         $sql = (string) file_get_contents((string) (new \ReflectionClass($migration))->getFileName());
         $this->assertStringContainsString('`ruvelo_security_alerts_finding`', $sql);
         $this->assertSame('ruvelo_security_alerts_finding', \Ruvelo\SecurityAlerts\Entity\FindingDefinition::ENTITY_NAME);
+    }
+
+    public function testTheLastSeenMigrationAddsTheColumnTheDefinitionNames(): void
+    {
+        $migration = new Migration1791846000AddLastSeenToFinding();
+        $this->assertSame(1791846000, $migration->getCreationTimestamp());
+        $this->assertStringContainsString('`last_seen`', (string) file_get_contents((string) (new \ReflectionClass($migration))->getFileName()));
+        $this->assertStringContainsString("'last_seen'", (string) file_get_contents(self::ROOT.'/src/Entity/FindingDefinition.php'));
     }
 
     public function testRoutesAreGuardedByTheAclPrivilegesTheAdminDeclares(): void

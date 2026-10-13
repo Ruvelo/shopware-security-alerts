@@ -1,3 +1,10 @@
+# 1.1.0 (2026-10-13)
+
+- Advisories now come from Valtry's signed Advisory API first (package names only, never versions), with Packagist and CISA used automatically if Valtry cannot answer.
+- New setting "Advisory source": Valtry first (default) or public sources only. `RUVELO_ADVISORIES_SOURCE=public` does the same from the server environment.
+- The administration page, the command and the JSON say which source answered.
+- Upgrading from 1.0 sends no new emails and raises no new alerts.
+
 # 1.0.0 (2026-10-12)
 
 - First release.

@@ -19,6 +19,9 @@ interface Settings
     /** The shop's own sender address, when it has one. */
     public function senderAddress(): ?string;
 
+    /** "valtry" (the default: Valtry first, the public feeds as fallback) or "public" (never contact Valtry). */
+    public function advisorySource(): string;
+
     /** Whether packages-dev from composer.lock are checked. */
     public function includeDev(): bool;
 }

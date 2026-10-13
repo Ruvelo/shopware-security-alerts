@@ -40,6 +40,24 @@
     </card>
 
     <card>
+        <title>Advisory source</title>
+        <title lang="de-DE">Quelle der Sicherheitshinweise</title>
+
+        <input-field type="single-select">
+            <name>advisorySource</name>
+            <label>Advisory source</label>
+            <label lang="de-DE">Quelle der Sicherheitshinweise</label>
+            <defaultValue>valtry</defaultValue>
+            <helpText>Valtry (default): package names are sent to Valtry's Advisory API, never versions, which are matched on your server. Answers are signed and checked, and if Valtry cannot answer the public sources are used automatically. Public sources only: Packagist and CISA are contacted directly and Valtry never is. Setting RUVELO_ADVISORIES_SOURCE=public in the server environment does the same and wins over this setting.</helpText>
+            <helpText lang="de-DE">Valtry (Standard): Paketnamen gehen an die Advisory-API von Valtry, niemals Versionen; diese werden auf Ihrem Server abgeglichen. Die Antworten sind signiert und werden geprüft; kann Valtry nicht antworten, werden automatisch die öffentlichen Quellen genutzt. Nur öffentliche Quellen: Packagist und CISA werden direkt abgefragt, Valtry nie. RUVELO_ADVISORIES_SOURCE=public in der Serverumgebung bewirkt dasselbe und hat Vorrang vor dieser Einstellung.</helpText>
+            <options>
+                <option><id>valtry</id><name>Valtry first, public sources as fallback</name><name lang="de-DE">Valtry zuerst, öffentliche Quellen als Rückfall</name></option>
+                <option><id>public</id><name>Public sources only (Packagist, CISA)</name><name lang="de-DE">Nur öffentliche Quellen (Packagist, CISA)</name></option>
+            </options>
+        </input-field>
+    </card>
+
+    <card>
         <title>Coverage</title>
         <title lang="de-DE">Umfang</title>
 

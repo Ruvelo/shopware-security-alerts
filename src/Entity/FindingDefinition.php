@@ -54,6 +54,7 @@ class FindingDefinition extends EntityDefinition
             (new DateTimeField('first_seen_at', 'firstSeenAt'))->addFlags(new Required()),
             new DateTimeField('notified_at', 'notifiedAt'),
             new BoolField('notified_exploited', 'notifiedExploited'),
+            new LongTextField('last_seen', 'lastSeen'),
         ]);
     }
 }

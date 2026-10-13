@@ -28,4 +28,6 @@ class FindingEntity extends Entity
     public ?\DateTimeInterface $firstSeenAt = null;
     public ?\DateTimeInterface $notifiedAt = null;
     public bool $notifiedExploited = false;
+    /** The finding as last seen (Finding::toArray() as JSON); null for a row 1.0 stored. */
+    public ?string $lastSeen = null;
 }

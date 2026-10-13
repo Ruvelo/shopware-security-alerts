@@ -47,6 +47,11 @@ Component.register('ruvelo-security-alerts-index', {
             return this.lastCheck !== null && !this.lastCheck.complete;
         },
 
+        sourceLabel() {
+            const source = this.lastCheck && this.lastCheck.source;
+            return ['valtry', 'mixed', 'public'].includes(source) ? this.$tc(`ruvelo-security-alerts.sources.${source}`) : '';
+        },
+
         canCheck() {
             return this.acl.can('ruvelo_security_alerts.editor');
         },

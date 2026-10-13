@@ -20,7 +20,8 @@
     },
     "labels": {
       "exploited": "Exploited, patch now",
-      "notChecked": "not checked (not installed with Composer)"
+      "notChecked": "not checked (not installed with Composer)",
+      "source": "Advisory source"
     },
     "messages": {
       "neverChecked": "Nothing has been checked yet. Press \"Check now\", or wait for the daily check.",
@@ -31,6 +32,11 @@
       "checked": "The check is done.",
       "checkFailed": "The check failed. See the Shopware log for details.",
       "loadFailed": "The findings could not be loaded."
+    },
+    "sources": {
+      "valtry": "Valtry (package names only, signed answers)",
+      "mixed": "Valtry and the public sources (Packagist, CISA)",
+      "public": "The public sources (Packagist, CISA)"
     }
   }
 }

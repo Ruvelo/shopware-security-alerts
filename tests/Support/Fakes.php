@@ -43,6 +43,8 @@ final class MemoryStore implements FindingStore
     /** @var array<string, StoredFinding> */
     public array $rows = [];
     public int $saves = 0;
+    /** @var array<string, array<mixed>> What save() was given as last seen; empty for rows made like 1.0 made them */
+    public array $snapshots = [];
 
     /**
      * @param list<StoredFinding> $stored
@@ -59,6 +61,16 @@ final class MemoryStore implements FindingStore
         return array_map(static fn (StoredFinding $s): bool => $s->exploited, $this->rows);
     }
 
+    public function lastSeen(): array
+    {
+        $seen = [];
+        foreach ($this->rows as $key => $row) {
+            $seen[$key] = $this->snapshots[$key] ?? $row->snapshot();
+        }
+
+        return $seen;
+    }
+
     public function all(): array
     {
         $all = array_values($this->rows);
@@ -67,17 +79,21 @@ final class MemoryStore implements FindingStore
         return $all;
     }
 
-    public function save(array $findings, array $resolved): void
+    public function save(array $findings, array $resolved, array $storedKeys = [], array $lastSeen = []): void
     {
         ++$this->saves;
         foreach ($resolved as $key) {
-            unset($this->rows[$key]);
+            unset($this->rows[$key], $this->snapshots[$key]);
         }
         foreach ($findings as $f) {
             /** @var Finding $f */
-            $old = $this->rows[$f->key()] ?? null;
-            $this->rows[$f->key()] = new StoredFinding(
-                $f->key(),
+            $key = $storedKeys[$f->key()] ?? $f->key();
+            $old = $this->rows[$key] ?? null;
+            if (isset($lastSeen[$key])) {
+                $this->snapshots[$key] = $lastSeen[$key];
+            }
+            $this->rows[$key] = new StoredFinding(
+                $key,
                 $f->package,
                 $f->installed,
                 $f->advisoryId,
@@ -122,6 +138,7 @@ final class FakeSettings implements Settings
         public Severity $minimum = Severity::Medium,
         public bool $dev = false,
         public ?string $sender = 'shop@example.com',
+        public string $source = 'valtry',
     ) {
     }
 
@@ -143,6 +160,11 @@ final class FakeSettings implements Settings
     public function senderAddress(): ?string
     {
         return $this->sender;
+    }
+
+    public function advisorySource(): string
+    {
+        return $this->source;
     }
 
     public function includeDev(): bool

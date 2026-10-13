@@ -16,7 +16,7 @@
     "php": "^8.2",
     "guzzlehttp/guzzle": "^7.0",
     "guzzlehttp/psr7": "^2.0",
-    "ruvelo/security-advisories": "^1.0",
+    "ruvelo/security-advisories": "^1.1",
     "shopware/core": "~6.6.0||~6.7.0"
   },
   "require-dev": {
@@ -34,7 +34,7 @@
     "psr-4": {
       "Ruvelo\\SecurityAlerts\\Tests\\": "tests/"
     },
-    "files": ["tests/Support/Fakes.php", "tests/Support/Harness.php"]
+    "files": ["tests/Support/Fakes.php", "tests/Support/Harness.php", "tests/Support/FakeNetwork.php"]
   },
   "extra": {
     "shopware-plugin-class": "Ruvelo\\SecurityAlerts\\RuveloSecurityAlerts",

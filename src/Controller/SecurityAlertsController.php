@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Ruvelo\SecurityAlerts\Controller;
 
-use Ruvelo\SecurityAdvisories\InstalledPackage;
 use Ruvelo\SecurityAlerts\Service\CheckState;
 use Ruvelo\SecurityAlerts\Service\Checker;
 use Ruvelo\SecurityAlerts\Service\FindingStore;
-use Ruvelo\SecurityAlerts\Service\Inventory;
 use Ruvelo\SecurityAlerts\Service\StoredFinding;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -20,7 +18,6 @@ class SecurityAlertsController extends AbstractController
     public function __construct(
         private readonly Checker $checker,
         private readonly FindingStore $store,
-        private readonly Inventory $inventory,
         private readonly CheckState $state,
     ) {
     }
@@ -44,14 +41,12 @@ class SecurityAlertsController extends AbstractController
      */
     private function payload(): array
     {
+        $last = $this->state->last();
+
         return [
             'findings' => array_map(static fn (StoredFinding $f): array => $f->toArray(), $this->store->all()),
-            'not_checked' => array_map(static fn (InstalledPackage $p): array => [
-                'name' => $p->name,
-                'version' => $p->version,
-                'reason' => 'not checked (not installed with Composer)',
-            ], $this->inventory->notInstalledWithComposer()->packages()),
-            'last_check' => $this->state->last(),
+            'not_checked' => $last['not_checked'] ?? [],
+            'last_check' => $last,
         ];
     }
 }

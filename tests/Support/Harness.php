@@ -11,7 +11,6 @@ use Ruvelo\SecurityAdvisories\Report;
 use Ruvelo\SecurityAdvisories\Scanner;
 use Ruvelo\SecurityAlerts\Service\CheckState;
 use Ruvelo\SecurityAlerts\Service\Checker;
-use Ruvelo\SecurityAlerts\Service\Inventory;
 use Ruvelo\SecurityAlerts\Service\Notifier;
 use Ruvelo\SecurityAlerts\Service\ScannerProvider;
 use Shopware\Core\Content\Mail\Service\AbstractMailService;
@@ -36,7 +35,7 @@ final class Harness
     public array $zipPlugins = [['Acme_Zip', '1.2.3']];
     public ?Report $recorded = null;
 
-    public function __construct(?MemoryStore $store = null, ?FakeSettings $settings = null)
+    public function __construct(?MemoryStore $store = null, ?FakeSettings $settings = null, ?ScannerProvider $provider = null)
     {
         $this->advisories = new FakeAdvisories();
         $this->kev = new FakeKev();
@@ -47,24 +46,17 @@ final class Harness
         $this->events = new EventDispatcher();
 
         $self = $this;
-        $scanners = new class ($self) implements ScannerProvider {
+        $scanners = $provider ?? new class ($self) implements ScannerProvider {
             public function __construct(private readonly Harness $h)
             {
             }
 
             public function scanner(): Scanner
             {
-                return new Scanner([new ComposerLockReader(__DIR__.'/../fixtures/composer.lock', false)], [$this->h->advisories], $this->h->kev);
-            }
-        };
-        $inventory = new class ($self) implements Inventory {
-            public function __construct(private readonly Harness $h)
-            {
-            }
-
-            public function notInstalledWithComposer(): ExtensionList
-            {
-                return new ExtensionList(array_map(static fn (array $p): array => ['name' => $p[0], 'version' => $p[1]], $this->h->zipPlugins), Ecosystem::Extension);
+                return new Scanner([
+                    new ComposerLockReader(__DIR__.'/../fixtures/composer.lock', false),
+                    new ExtensionList(array_map(static fn (array $p): array => ['name' => $p[0], 'version' => $p[1]], $this->h->zipPlugins), Ecosystem::Extension),
+                ], [$this->h->advisories], $this->h->kev);
             }
         };
         $state = new class ($self) implements CheckState {
@@ -84,7 +76,7 @@ final class Harness
         };
 
         $notifier = new Notifier($this->settings, $this->store, $this->mail, $this->logger);
-        $this->checker = new Checker($scanners, $this->store, $inventory, $notifier, $state, $this->events);
+        $this->checker = new Checker($scanners, $this->store, $notifier, $state, $this->events);
     }
 
     public function notifier(): Notifier
